@@ -1,75 +1,47 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 import path from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { fileURLToPath } from "url";
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// Helper to handle __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-  base: basePath,
+  // Vercel handles the base path automatically. 
+  // Set to "/" unless you are deploying to a sub-directory.
+  base: "/", 
+  
   plugins: [
     react(),
-    tailwindcss(),
-    runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, ".."),
-            }),
-          ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
-        ]
-      : []),
+    // Note: If you are using Tailwind v3, remove the tailwindcss() plugin 
+    // from here and use postcss.config.js instead.
   ],
+
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      "@": path.resolve(__dirname, "src"),
+      // Adjusted assets path to be relative to your Vercel project root
+      "@assets": path.resolve(__dirname, "assets"),
     },
     dedupe: ["react", "react-dom"],
   },
-  root: path.resolve(import.meta.dirname),
+
+  // Standard Vite root is the current directory
+  root: __dirname,
+
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    // Vercel expects the build output in "dist" by default
+    outDir: "dist",
     emptyOutDir: true,
+    // Ensure the build target is compatible with modern browsers
+    target: "esnext",
   },
+
   server: {
-    port,
-    strictPort: true,
-    host: "0.0.0.0",
-    allowedHosts: true,
-    fs: {
-      strict: true,
-    },
-  },
-  preview: {
-    port,
-    host: "0.0.0.0",
-    allowedHosts: true,
+    // Vercel overrides these during local 'vercel dev'
+    port: 3000,
+    strictPort: false,
+    host: true,
   },
 });
